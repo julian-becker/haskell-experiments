@@ -9,6 +9,8 @@ module ApiServer
 
 import Servant
 import Network.Wai.Handler.Warp (run)
+import Control.Monad.Trans.Except (ExceptT(..))
+import Control.Exception (try)
 import Data.Text.Lazy (Text)
 import Data.ByteString.Lazy.Char8 (pack)
 import Data.Text.Lazy.Encoding (encodeUtf8)
@@ -34,30 +36,48 @@ instance Accept JsonDoc where
   contentType _ = "application" // "json" /: ("charset", "utf-8")
 
 
-data MyData = MyData
+data Info = Info
   { content :: String
   } deriving (Show)
 
 
-instance ToJSON MyData where
-    toJSON  (MyData c) = toJSON c
+instance ToJSON Info where
+    toJSON  (Info c) = toJSON c
+
+type EntrypointResource = Get '[HTML] Text
+type InfoResource       = Get '[JSON] Info
+type SymbolsResource    = Post '[JSON] NoContent
 
 type ServerAPI =
-        Get '[HTML] Text
-  :<|>  "symbols" :> Post '[JSON] MyData
+        EntrypointResource
+        :<|>  "info" :> InfoResource
+        :<|>  "symbols" :> SymbolsResource
 
-symbolsHandler :: MyData
-symbolsHandler = MyData "Hello from upload"
+convert :: IO a -> Handler a
+convert = Handler . ExceptT . try
 
 serverRoutes :: Server ServerAPI
-serverRoutes = return "Hello from my API!" :<|> return symbolsHandler
+serverRoutes =
+         entrypointHandler
+    :<|> infoHandler
+    :<|> symbolsHandler
+  where
+    entrypointHandler :: Handler Text
+    entrypointHandler = return "Welcome to my awesome Haskell-API!" :: Handler Text
+
+    infoHandler :: Handler Info
+    infoHandler = return $ Info "Important status information about the server"
+
+    symbolsHandler :: Handler NoContent
+    symbolsHandler = do
+      convert $ putStrLn "Test"
+      return NoContent
 
 serverProxy :: Proxy ServerAPI
 serverProxy = Proxy
-
 
 router :: Application
 router = serve serverProxy serverRoutes
 
 apiServer :: IO ()
-apiServer = run 80 (middleware router)
+apiServer = run 8088 (middleware router)
