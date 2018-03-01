@@ -9,6 +9,7 @@ module ApiServer
     ) where
 
 import Servant
+import Servant.Server
 import Network.Wai.Handler.Warp (run)
 import Control.Monad.Trans.Except (ExceptT(..))
 import Control.Exception (try)
@@ -47,14 +48,20 @@ data SymbolArchive = SymbolArchive
   { symbolContent :: String
   } deriving (Show, Generic)
 
+data User = User
+  { name :: String
+  } deriving (Show, Generic)
+
 instance ToJSON Info where
     toJSON  (Info c) = toJSON c
 
 instance FromJSON SymbolArchive
 
+instance FromJSON User
+
 type EntrypointResource = Get '[HTML] Text
 type InfoResource       = "info" :> Get '[JSON] Info
-type SymbolsResource    = "symbols" :> ReqBody '[JSON] SymbolArchive :> Post '[JSON] NoContent
+type SymbolsResource    = "symbols" :> BasicAuth "symbols" User :> ReqBody '[JSON] SymbolArchive :> Post '[JSON] NoContent
 
 type ServerAPI =
         EntrypointResource
@@ -74,16 +81,27 @@ serverRoutes =
     infoHandler :: Handler Info
     infoHandler = return $ Info "Important status information about the server"
 
-    symbolsHandler :: SymbolArchive -> Handler NoContent
-    symbolsHandler syms = do
+    symbolsHandler :: User -> SymbolArchive -> Handler NoContent
+    symbolsHandler u syms = do
       liftIO $ putStrLn ("Test symbols: " ++ symbolContent syms)
       return NoContent
+
+authCheck :: BasicAuthCheck User
+authCheck = let
+      check (BasicAuthData user pass) =
+        if user == "admin"
+          then return (Authorized $ User "Administrator")
+          else return Unauthorized
+    in BasicAuthCheck check
+
+authContext :: Context (BasicAuthCheck User ': '[])
+authContext = authCheck :. EmptyContext
 
 serverProxy :: Proxy ServerAPI
 serverProxy = Proxy
 
 router :: Application
-router = serve serverProxy serverRoutes
+router = serveWithContext serverProxy authContext serverRoutes
 
 apiServer :: IO ()
 apiServer = run 8088 (middleware router)
