@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module ApiServer
     ( apiServer
@@ -17,7 +18,8 @@ import Data.ByteString.Lazy.Char8 (pack)
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Network.HTTP.Media ((//), (/:))
 import ApiServer.Middleware (middleware)
-import Data.Aeson (ToJSON, toJSON, Value(..), encode)
+import GHC.Generics (Generic)
+import Data.Aeson (ToJSON, FromJSON(..), toJSON, fromJSON, Value(..), encode)
 
 data HTML
 data JsonDoc
@@ -38,16 +40,21 @@ instance Accept JsonDoc where
 
 
 data Info = Info
-  { content :: String
+  { infoContent :: String
   } deriving (Show)
 
+data SymbolArchive = SymbolArchive
+  { symbolContent :: String
+  } deriving (Show, Generic)
 
 instance ToJSON Info where
     toJSON  (Info c) = toJSON c
 
+instance FromJSON SymbolArchive
+
 type EntrypointResource = Get '[HTML] Text
 type InfoResource       = "info" :> Get '[JSON] Info
-type SymbolsResource    = "symbols" :> Post '[JSON] NoContent
+type SymbolsResource    = "symbols" :> ReqBody '[JSON] SymbolArchive :> Post '[JSON] NoContent
 
 type ServerAPI =
         EntrypointResource
@@ -67,9 +74,9 @@ serverRoutes =
     infoHandler :: Handler Info
     infoHandler = return $ Info "Important status information about the server"
 
-    symbolsHandler :: Handler NoContent
-    symbolsHandler = do
-      liftIO $ putStrLn "Test"
+    symbolsHandler :: SymbolArchive -> Handler NoContent
+    symbolsHandler syms = do
+      liftIO $ putStrLn ("Test symbols: " ++ symbolContent syms)
       return NoContent
 
 serverProxy :: Proxy ServerAPI
