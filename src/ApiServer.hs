@@ -11,6 +11,7 @@ import Servant
 import Network.Wai.Handler.Warp (run)
 import Control.Monad.Trans.Except (ExceptT(..))
 import Control.Exception (try)
+import Control.Monad.Except (liftIO)
 import Data.Text.Lazy (Text)
 import Data.ByteString.Lazy.Char8 (pack)
 import Data.Text.Lazy.Encoding (encodeUtf8)
@@ -45,16 +46,14 @@ instance ToJSON Info where
     toJSON  (Info c) = toJSON c
 
 type EntrypointResource = Get '[HTML] Text
-type InfoResource       = Get '[JSON] Info
-type SymbolsResource    = Post '[JSON] NoContent
+type InfoResource       = "info" :> Get '[JSON] Info
+type SymbolsResource    = "symbols" :> Post '[JSON] NoContent
 
 type ServerAPI =
         EntrypointResource
-        :<|>  "info" :> InfoResource
-        :<|>  "symbols" :> SymbolsResource
+        :<|>   InfoResource
+        :<|>   SymbolsResource
 
-convert :: IO a -> Handler a
-convert = Handler . ExceptT . try
 
 serverRoutes :: Server ServerAPI
 serverRoutes =
@@ -70,7 +69,7 @@ serverRoutes =
 
     symbolsHandler :: Handler NoContent
     symbolsHandler = do
-      convert $ putStrLn "Test"
+      liftIO $ putStrLn "Test"
       return NoContent
 
 serverProxy :: Proxy ServerAPI
