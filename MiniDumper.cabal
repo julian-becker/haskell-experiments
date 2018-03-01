@@ -47,6 +47,7 @@ library
 
   exposed-modules:
       ApiServer
+      Api
   other-modules:
       Paths_MiniDumper
     , ApiServer.Middleware
