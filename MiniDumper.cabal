@@ -35,8 +35,12 @@ library
     , bytestring
     , json
     , warp
+    , lens
     , servant
     , servant-server
+    , servant-docs
+    , servant-swagger
+    , swagger2
     , http-media
     , aeson
     , transformers

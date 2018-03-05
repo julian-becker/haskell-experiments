@@ -6,10 +6,7 @@
 
 module Api
     ( AppAPI
-    , EntrypointResource
-    , InfoResource
-    , SymbolsResource
-    , Info(..)
+    , InfoRes(..)
     , SymbolArchive(..)
     , User(..)
     ) where
@@ -21,12 +18,12 @@ import GHC.Generics (Generic)
 import Data.Aeson (ToJSON, FromJSON(..), toJSON, fromJSON, Value(..), encode)
 
 
-data Info = Info
+data InfoRes = InfoRes
   { infoContent :: String
   } deriving (Show, Generic)
 
-instance ToJSON Info
-instance FromJSON Info
+instance ToJSON InfoRes
+instance FromJSON InfoRes
 
 
 data SymbolArchive = SymbolArchive
@@ -37,7 +34,7 @@ instance FromJSON SymbolArchive
 
 
 data User = User
-  { name :: String
+  { userName :: String
   } deriving (Show, Generic)
 
 instance ToJSON User
@@ -45,7 +42,7 @@ instance FromJSON User
 
 
 type EntrypointResource = Get '[JSON] Text
-type InfoResource       = "info" :> Get '[JSON] Info
+type InfoResource       = "info" :> Get '[JSON] InfoRes
 type SymbolsResource    = "symbols" :> BasicAuth "symbols" User :> ReqBody '[JSON] SymbolArchive :> Post '[JSON] NoContent
 
 type AppAPI =
