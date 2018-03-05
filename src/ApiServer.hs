@@ -15,26 +15,32 @@ module ApiServer
 import Servant.API ((:<|>) ((:<|>)), (:>), BasicAuth, Get, JSON)
 
 import Api (AppAPI, InfoRes(..), User(..), SymbolArchive(..))
-import Servant (Proxy, AuthProtect(..), BasicAuthData(..), NoContent(..), Proxy(..))
+import Servant (Proxy, AuthProtect(..), BasicAuthData(..), NoContent(..), Proxy(..), Accept(..), MimeUnrender(..))
 import Servant.Server (serveWithContext, Application, BasicAuthCheck(..), BasicAuthResult(..), Context(..), Handler, Server)
+import Servant.API (OctetStream)
 import Network.Wai.Handler.Warp (run)
 import Control.Monad.Trans.Except (ExceptT(..))
 import Control.Exception (try)
 import Control.Monad.Except (liftIO)
 import Data.Text.Lazy (Text)
-import Data.ByteString.Lazy.Char8 (pack)
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Network.HTTP.Media ((//), (/:))
 import ApiServer.Middleware (middleware)
 import GHC.Generics (Generic)
 import Data.Aeson (ToJSON, FromJSON(..), toJSON, fromJSON, Value(..), encode)
 import Servant.Swagger (toSwagger,HasSwagger)
-import Data.Swagger (Swagger, URL(..), ToSchema(..),
+import Data.Swagger (Swagger, URL(..), ToSchema(..), binarySchema, NamedSchema(..),
   parameters, allOperations, Param(..), Referenced(..), ToParamSchema, ParamAnySchema(..),
   security, required, name, toParamSchema, paramSchema, ParamLocation(..),
   info, title, description, license, url, version, genericDeclareNamedSchema, schema, example,
   defaultSchemaOptions, in_)
 import Control.Lens ((.~), (?~), (%~), (&), mapped)
+
+
+instance MimeUnrender OctetStream SymbolArchive where
+  mimeUnrender _ = Right . SymbolArchive
+
 
 -- | API for serving @swagger.json@.
 type SwaggerAPI = "swagger.json" :> Get '[JSON] Swagger
@@ -79,7 +85,9 @@ instance ToSchema Swagger where
 instance ToSchema NoContent
 instance ToSchema User
 instance ToParamSchema User
-instance ToSchema SymbolArchive
+
+instance ToSchema SymbolArchive where
+  declareNamedSchema _ = return $ NamedSchema (Just "SymbolArchive") binarySchema
 
 apiSwagger :: Swagger
 apiSwagger = toSwagger api
@@ -99,7 +107,7 @@ serverRoutes =
 
     symbolsHandler :: User -> SymbolArchive -> Handler NoContent
     symbolsHandler u syms = do
-      liftIO $ putStrLn ("Test symbols: " ++ symbolContent syms)
+      liftIO $ L8.writeFile "outfile" $ symbolContent syms
       return NoContent
 
 authCheck :: BasicAuthCheck User

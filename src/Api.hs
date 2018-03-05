@@ -11,8 +11,8 @@ module Api
     , User(..)
     ) where
 
-import Servant.API ((:<|>) ((:<|>)), (:>), BasicAuth, Get, JSON, NoContent, Post, Get, ReqBody)
-
+import Servant.API ((:<|>) ((:<|>)), (:>), OctetStream, BasicAuth, Get, JSON, NoContent, Post, Get, ReqBody)
+import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Text.Lazy (Text)
 import GHC.Generics (Generic)
 import Data.Aeson (ToJSON, FromJSON(..), toJSON, fromJSON, Value(..), encode)
@@ -27,10 +27,8 @@ instance FromJSON InfoRes
 
 
 data SymbolArchive = SymbolArchive
-  { symbolContent :: String
+  { symbolContent :: ByteString
   } deriving (Show, Generic)
-
-instance FromJSON SymbolArchive
 
 
 data User = User
@@ -43,7 +41,7 @@ instance FromJSON User
 
 type EntrypointResource = Get '[JSON] Text
 type InfoResource       = "info" :> Get '[JSON] InfoRes
-type SymbolsResource    = "symbols" :> BasicAuth "symbols" User :> ReqBody '[JSON] SymbolArchive :> Post '[JSON] NoContent
+type SymbolsResource    = "symbols" :> BasicAuth "symbols" User :> ReqBody '[OctetStream] SymbolArchive :> Post '[JSON] NoContent
 
 type AppAPI =
         EntrypointResource
