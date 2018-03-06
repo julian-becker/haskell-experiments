@@ -50,6 +50,7 @@ library
     , wai-middleware-static
 
   exposed-modules:
+      ApiDocs
       ApiServer
       Api
   other-modules:
