@@ -40,6 +40,7 @@ library
     , servant-server
     , servant-docs
     , servant-swagger
+    , servant-swagger-ui
     , swagger2
     , http-media
     , aeson

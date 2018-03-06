@@ -19,6 +19,7 @@ import Servant (Proxy, AuthProtect(..), BasicAuthData(..), NoContent(..), Proxy(
 import Servant.Server (serveWithContext, Application, BasicAuthCheck(..), BasicAuthResult(..), Context(..), Handler, Server)
 import Servant.API (OctetStream)
 import Network.Wai.Handler.Warp (run)
+import Servant.Swagger.UI
 import Control.Monad.Trans.Except (ExceptT(..))
 import Control.Exception (try)
 import Control.Monad.Except (liftIO)
@@ -40,7 +41,7 @@ serverRoutes =
          (entrypointHandler
     :<|> infoHandler
     :<|> symbolsHandler)
-    :<|> (return apiDocs)
+    :<|> swaggerSchemaUIServer apiDocs
   where
     entrypointHandler :: Handler Text
     entrypointHandler = return "Welcome to my awesome Haskell-API!" :: Handler Text

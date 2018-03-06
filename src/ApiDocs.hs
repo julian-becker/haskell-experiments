@@ -14,12 +14,13 @@ import Api (AppAPI, InfoRes(..), User(..), SymbolArchive(..))
 import Servant (Proxy(..), NoContent(..), MimeUnrender(..))
 import Data.Text.Lazy (Text)
 import Data.Aeson (ToJSON, toJSON)
+import Servant.Swagger.UI
 import Servant.Swagger (toSwagger,HasSwagger)
 import Data.Swagger (Swagger, URL(..), ToSchema(..), ToParamSchema(..), NamedSchema(..),
   schema, example, description, binarySchema, defaultSchemaOptions, genericDeclareNamedSchema)
 import Control.Lens ((?~), (&), mapped)
 
-type SwaggerAPI    = "swagger.json" :> Get '[JSON] Swagger
+type SwaggerAPI    = SwaggerSchemaUI "swagger-ui" "swagger.json"
 type DocumentedAPI = AppAPI :<|> SwaggerAPI
 
 apiDocs :: Swagger
@@ -34,8 +35,6 @@ instance ToSchema InfoRes where
     & mapped.schema.description ?~ "This is some Info field"
     & mapped.schema.example ?~ toJSON (InfoRes "some text")
 
-instance ToSchema Swagger where
-  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Text)
 
 instance ToSchema NoContent
 instance ToSchema User
